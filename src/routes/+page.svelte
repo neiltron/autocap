@@ -1,115 +1,76 @@
 <script lang="ts">
-    import { pipeline } from '@xenova/transformers';
-    import { writable } from 'svelte/store';
-
-    type wordChunk = {
-        text: string,
-        timestamp: [number, number]
-    };
+    import {
+        audioFile, captionFile, downloadSRT, downloadVTT,
+        loaderFiles, phrases, transcribeAudio
+    } from '$lib/store';
+    import type { wordChunk } from '$lib/store';
+	import type { ChangeEventHandler } from 'svelte/elements';
 
     let videoElement: HTMLVideoElement | null = null;
     let captionElement: HTMLDivElement | null = null;
-    let audioFile: File | null = null;
-    let loaderFiles = writable<any[]>([])
 
-    async function transcribeAudio() {
-        if (!audioFile) return;
+    function handleFileChange(e: ChangeEventHandler<HTMLInputElement>): void {
+        $audioFile = e.target.files![0];
+    }
 
-        let url = URL.createObjectURL(audioFile);
-        let transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en', {
-            revision: 'output_attentions',
-            progress_callback: (progressData: any) => {
-                console.log(progressData)
-                if ($loaderFiles.indexOf(progressData.file) === -1) {
-                    $loaderFiles = [...$loaderFiles, progressData.file];
-                }
+    async function processFile(): Promise<void> {
+        const url: string | undefined = await transcribeAudio();
 
-                if (progressData.status === 'progress' && progressData.progress === 100) {
-                    $loaderFiles = $loaderFiles.filter(file => file !== progressData.file);
-                }
-            }
-        });
-
-        let output = await transcriber(url, {
-            return_timestamps: 'word',
-            chunk_length_s: 30,
-            stride_length_s: 5
-        });
-        const phrases = await groupIntoPhrases(output.chunks);
+        if (!url) { return; }
 
         videoElement!.src = url;
+
+        console.log($captionFile)
+        const track = document.createElement('track');
+        const captionUrl: string = (URL || webkitURL).createObjectURL($captionFile);
+        Object.assign(track, {
+            label: "English",
+            default: true,
+            kind: "captions",
+            src: captionUrl
+        });
+
+        videoElement!.appendChild(track);
+        track.srclang = "en";
+        track.mode = "showing";
+        videoElement!.textTracks[0].mode = "showing";
+
         videoElement?.addEventListener('timeupdate', () => {
             const currentTime = videoElement!.currentTime;
-            const currentPhrase = phrases.find(phrase => phrase.timestamp[0] <= currentTime && phrase.timestamp[1] >= currentTime);
+
+            const currentPhrase: wordChunk | undefined = $phrases.find(phrase => {
+                return phrase.timestamp[0] <= currentTime && phrase.timestamp[1] >= currentTime;
+            });
 
             if (currentPhrase) {
                 captionElement!.innerText = currentPhrase.text;
             }
         });
-    }
-
-    async function groupIntoPhrases(wordChunks: wordChunk[], minWords = 5, maxWords = 10) {
-        console.log(wordChunks);
-
-        let phrases: wordChunk[] = [];
-        let currentPhrase = "";
-        let phraseStart = 0;
-        let wordCount = 0;
-
-        wordChunks.forEach((chunk, index) => {
-            if (wordCount === 0) {
-                phraseStart = chunk.timestamp[0]; // Start of the new phrase
-            }
-
-            currentPhrase += chunk.text + " ";
-            wordCount++;
-
-            // Check if the phrase has reached the minimum length or is the last word
-            if (wordCount >= minWords || index === wordChunks.length - 1) {
-                phrases.push({
-                    text: currentPhrase.trim(),
-                    timestamp: [phraseStart, chunk.timestamp[1]]
-                });
-
-                // Reset for next phrase
-                currentPhrase = "";
-                wordCount = 0;
-            }
-
-            // If reached maxWords, force end of the current phrase
-            if (wordCount === maxWords) {
-                phrases.push({
-                    text: currentPhrase.trim(),
-                    timestamp: [phraseStart, chunk.timestamp[1]]
-                });
-
-                // Reset for next phrase
-                currentPhrase = "";
-                wordCount = 0;
-            }
-        });
-
-        return phrases;
-    }
+    };
 </script>
 
 <div class='container'>
     <header>
         <h1>🧢 <span>autocap</span></h1>
-        <form on:submit|preventDefault={transcribeAudio}>
-            <input type="file" accept="audio/*" on:change="{e => audioFile = e.target?.files[0]}" />
+        <form on:submit|preventDefault={processFile}>
+            <input type="file" accept="audio/*" on:change={handleFileChange} />
             <button type="submit">Transcribe Audio</button>
-            <div class='loader'>
-                {#each $loaderFiles as file}
-                    <progress max="100" value="{file.progress}"></progress>
-                {/each}
-            </div>
+
+            {#if $loaderFiles.length > 0}
+                <ul class='loader'>
+                    {#each $loaderFiles as file}
+                        <li>{file.name}</li>
+                    {/each}
+                </ul>
+            {/if}
         </form>
     </header>
     <div class="video-container">
         <video bind:this={videoElement} controls></video>
         <div class="transcript" bind:this={captionElement}></div>
     </div>
+    <button class="download-srt" on:click={downloadSRT}>Download SRT</button>
+    <button class="download-vtt" on:click={downloadVTT}>Download VTT</button>
 </div>
 
 <style lang="scss">
@@ -172,11 +133,11 @@
         position: relative;
         width: 30rem;
         height: 16.875rem;
+        margin-top: 2rem;
         video {
             position: absolute;
             top: 0; left: 0;
             width: 100%;
-            height: 100%;
         }
 
         .transcript {
