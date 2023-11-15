@@ -67,8 +67,13 @@ async function groupIntoPhrases(wordChunks: wordChunk[], minWords = 5, maxWords 
     let previousEndTime = 0;
     const phrases: wordChunk[] = [];
 
+    //
+    // whisper chunks seem to be back to back rather than being truly
+    // word-level. caption formats don't like that, so we do a little bit of
+    // time shifting below to make sure the timestamps are compliant.
+    //
     wordChunks.forEach((chunk, index) => {
-        // Adjust start time if it overlaps with previous end time
+        // adjust start time if it overlaps with previous end time
         if (wordCount === 0) {
             phraseStart = Math.max(chunk.timestamp[0], previousEndTime);
         }
@@ -76,13 +81,13 @@ async function groupIntoPhrases(wordChunks: wordChunk[], minWords = 5, maxWords 
         currentPhrase += chunk.text + " ";
         wordCount += 1;
 
-        // Check if the phrase has reached the minimum length, max length or is the last word
+        // reached the minimum length, max length or is the last word
         if (wordCount >= minWords || index === wordChunks.length - 1 || wordCount === maxWords) {
             phraseEnd = chunk.timestamp[1];
 
-            // Adjust end time if it is before the start time
+            // adjust end time if it is before the start time
             if (phraseEnd < phraseStart) {
-                phraseEnd = phraseStart + 0.001; // Increment by 1 millisecond
+                phraseEnd = phraseStart + 0.001;
             }
 
             phrases.push({
@@ -90,7 +95,7 @@ async function groupIntoPhrases(wordChunks: wordChunk[], minWords = 5, maxWords 
                 timestamp: [phraseStart, phraseEnd]
             });
 
-            // Update the previous end time and reset for next phrase
+            // update the previous end time and reset for next phrase
             previousEndTime = phraseEnd;
             currentPhrase = "";
             wordCount = 0;
