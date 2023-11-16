@@ -100,6 +100,10 @@
             createSubtitleTrack();
         }, 10);
     }
+
+    function roundTimestamp(timestamp: number): number {
+        return Math.floor(timestamp * 1000) / 1000;
+    }
 </script>
 
 
@@ -114,7 +118,7 @@
         {#if $loaderFiles.length > 0}
             <ul class='loader'>
                 {#each $loaderFiles as file}
-                    <li>{file.name}</li>
+                    <li>{file}</li>
                 {/each}
             </ul>
         {/if}
@@ -162,7 +166,7 @@
             {:else}
                 <span>{phrase.text}</span>
             {/if}
-            <div class="timestamp">{phrase.timestamp[0]} - {phrase.timestamp[1]}</div>
+            <div class="timestamp">{roundTimestamp(phrase.timestamp[0])} - {roundTimestamp(phrase.timestamp[1])}</div>
         </div>
     {/each}
 </div>
