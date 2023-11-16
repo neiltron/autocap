@@ -9,11 +9,11 @@ Demo using transformers.js and Whisper to generate caption files. It currently w
 
 📝 Transcribe to VTT and SRT formats.
 
-✏️ (Soon) Make live edits in case of word or timing errors.
+✏️ Make live edits to the transcription
 
 ![screenshot](./static/screenshot.png)
 
 ## todo
-- [ ] Add edit mode
 - [ ] Move transcription code to webworkers
-- [ ] Add tailwind?
+- [ ] Translation to other languages?
+- [ ] Add tailwind or something?
