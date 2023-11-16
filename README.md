@@ -1,7 +1,7 @@
 # autocap
 Caps on auto mode. ALL CAPS, no capping.
 
-Demo using transformers.js and Whisper to generate caption files. It currently works okay but is completely unstyled and should make use of use webworkers.
+Demo using transformers.js and Whisper to generate caption files. It currently works okay but is completely unstyled and should make use of webworkers.
 
 **Features**
 
