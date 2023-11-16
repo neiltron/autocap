@@ -78,7 +78,7 @@ async function groupIntoPhrases(wordChunks: wordChunk[], minWords = 5, maxWords 
             phraseStart = Math.max(chunk.timestamp[0], previousEndTime);
         }
 
-        currentPhrase += chunk.text + " ";
+        currentPhrase += chunk.text.trim() + " ";
         wordCount += 1;
 
         // reached the minimum length, max length or is the last word
