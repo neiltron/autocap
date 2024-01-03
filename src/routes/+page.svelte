@@ -1,7 +1,7 @@
 <script lang="ts">
     import {
         audioFile, captionFile, downloadSRT, downloadVTT,
-        getClosedCaptionBlob, loaderFiles, phrases, transcribeAudio
+        getClosedCaptionBlob, loaderFiles, modelSize, phrases, transcribeAudio
     } from '$lib/store';
     import type { wordChunk } from '$lib/store';
 	import type { ChangeEventHandler } from 'svelte/elements';
@@ -16,6 +16,10 @@
 
     function handleFileChange(e: ChangeEventHandler<HTMLInputElement>): void {
         $audioFile = e.target.files![0];
+    }
+
+    function handleModelSelect(e: ChangeEventHandler<HTMLSelectElement>): void {
+        $modelSize = e.target.value;
     }
 
     async function processFile(): Promise<void> {
@@ -112,7 +116,17 @@
 <main>
     <h1>🧢 <span>autocap</span></h1>
     <form on:submit|preventDefault={processFile}>
-        <input type="file" accept="audio/*" on:change={handleFileChange} />
+        <div class="input-row">
+            <input type="file" accept="audio/*" on:change={handleFileChange} />
+            <label>
+                <span>Model Size</span>
+                <select on:change={handleModelSelect}>
+                    <option>tiny</option>
+                    <option>base</option>
+                    <option>small</option>
+                </select>
+            </label>
+        </div>
         <button type="submit">{isProcessing ? 'Loading...' : 'Transcribe Audio'}</button>
 
         {#if $loaderFiles.length > 0}
@@ -212,6 +226,16 @@
             border: 1px solid #aaa;
             border-radius: 3px;
             padding: 1rem;
+
+            button {
+                width: 100%;
+                padding: 10px;
+                margin-top: 12px;
+            }
+
+            label {
+                font-size: .8rem;
+            }
 
             .loader {
                 position: absolute;

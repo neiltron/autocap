@@ -18,6 +18,7 @@ type progressData = {
 };
 
 export const audioFile = writable<Blob | MediaSource | null>(null);
+export const modelSize = writable<'tiny' | 'base' | 'small' | 'medium'>('tiny');
 export const captionFile = writable<Blob>("" as unknown as Blob);
 export const loaderFiles = writable<string[]>([])
 export const phrases = writable<wordChunk[]>([])
@@ -31,7 +32,7 @@ export async function transcribeAudio() {
     if (file == null) return;
 
     const url = URL.createObjectURL(file);
-    const transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en', {
+    const transcriber = await pipeline('automatic-speech-recognition', `Xenova/whisper-${get(modelSize)}.en`, {
         revision: 'output_attentions',
         progress_callback: (progressData: progressData) => {
             if (!handleProgress) return;
